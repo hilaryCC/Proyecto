@@ -1,4 +1,4 @@
-#include <pathway.h>
+#include "pathway.h"
 #include <iostream>
 #include <vector>
 using namespace std;
@@ -67,6 +67,10 @@ void Pathway::addEntry(Entry *nuevo){
     }
 }
 
+void Pathway::profundidad(Pathway *actual){
+
+}
+
 //Funciones de la clase Entry
 Entry::Entry(string nombre, int id){
     this->nombre = nombre;
@@ -110,4 +114,10 @@ bool Entry::hasReaction(Reaction *nuevo){
         aux = aux->sig;
     }
     return false;
+}
+
+bool Entry::empty(){
+  if(this->primero == NULL)
+    return true;
+  return false;
 }
