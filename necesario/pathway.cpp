@@ -1,8 +1,29 @@
 #include "pathway.h"
 #include <iostream>
 #include <vector>
+#include <ncurses.h>
+#include <string.h>
+#include <string>
 using namespace std;
 
+bool esfinal(){
+  int y,x;
+  int maxy, maxx;
+  getyx(stdscr, y, x);
+  getmaxyx(stdscr, maxy,maxx);
+  if(y+3 >= maxy){
+    move(maxy,0);
+    printw(".:Continuar:.");
+    refresh();
+    return true;
+  }
+  return false;
+}
+
+void final(){
+  printw("\n.:Salir:.");
+  refresh();
+}
 
 //Funciones de la clase Pathway
 Pathway::Pathway(string nombre, string titulo){
@@ -44,9 +65,15 @@ Entry * Pathway::getEntry(int id){
 }
 
 void Pathway::print(){
-    cout << "Nombre del Pathway: " << this->nombre
-         << " - Titulo: " << this->titulo
-         << "\nCantidad de entradas: " << this->largo() << endl;
+    string salida = "Nombre del Pathway: "+this->nombre+" - Titulo: "+this->titulo;
+    salida = salida+"\nCantidad de entradas: "+to_string(this->largo());
+     if(esfinal()){
+       getch();
+       werase(stdscr);
+       refresh();
+     }
+    printw("%s\n", salida.c_str());
+    refresh();
     Entry *actual = this->primero;
     while(actual != NULL){
         actual->print();
@@ -71,7 +98,57 @@ void Pathway::profundidad(Pathway *actual){
 
 }
 
+void Pathway::delEmptyR(){
+  Entry *actual = this->primero;
+  Entry *aux;
+  bool band = false;
+  Entry *del = NULL;
+  while(actual != NULL){
+    if(actual->empty()){
+      band = false;
+      aux = this->primero;
+      while(aux != NULL){
+        if(aux->isReaction(actual)){
+          band = true;
+          break;
+        }
+        aux = aux->sig;
+      }
+      if(!band){
+        del = actual;
+      }
+    }
+    actual = actual->sig;
+    delEntry(del);
+  }
+}
+
+void Pathway::delEntry(Entry *del){
+  Entry *aux = this->primero;
+  Entry *anterior;
+  while(aux != NULL){
+    if(aux == del && aux == this->primero){
+        this->primero = aux->sig;
+        free(aux);
+        break;
+    }
+    else if(aux == del && aux == this->ultimo){
+      this->ultimo = anterior;
+      free(aux);
+      break;
+    }
+    else if(aux == del){
+      anterior->sig = aux->sig;
+      free(aux);
+      break;
+    }
+    anterior = aux;
+    aux = aux->sig;
+  }
+}
+
 //Funciones de la clase Entry
+
 Entry::Entry(string nombre, int id){
     this->nombre = nombre;
     this->id = id;
@@ -81,15 +158,26 @@ Entry::Entry(string nombre, int id){
 }
 
 void Entry::print(){
-    cout << "\tNombre de la entrada: " << this->nombre
+    string salida = "\tNombre de la entrada: "+this->nombre+" - Id: "+to_string(this->id)+"\n\t\tId de las reacciones:";
+    /*cout << "\tNombre de la entrada: " << this->nombre
          << " - Id: " << this->id
-         << "\n\t\tId de las reacciones:";
+         << "\n\t\tId de las reacciones:";*/
+     if(esfinal()){
+       getch();
+       werase(stdscr);
+       refresh();
+     }
+    printw("%s", salida.c_str());
+    refresh();
     Reaction *aux = this->primero;
     while(aux != NULL){
-        cout << " " << aux->getId();
+      salida = " "+to_string(aux->getId());
+      printw("%s", salida.c_str());
+      refresh();
+        //cout << " " << aux->getId();
         aux = aux->sig;
     }
-    cout << "\n" << endl;
+    printw("\n");
 }
 
 void Entry::addReaction(Reaction *nuevo){
@@ -109,7 +197,7 @@ void Entry::addReaction(Reaction *nuevo){
 bool Entry::hasReaction(Reaction *nuevo){
     Reaction * aux = this->primero;
     while(aux!=NULL){
-        if(aux == nuevo)
+        if(aux->reaction == nuevo->reaction)
             return true;
         aux = aux->sig;
     }
@@ -119,5 +207,15 @@ bool Entry::hasReaction(Reaction *nuevo){
 bool Entry::empty(){
   if(this->primero == NULL)
     return true;
+  return false;
+}
+
+bool Entry::isReaction(Entry *aux){
+  Reaction *actual = this->primero;
+  while(actual!=NULL){
+    if(actual->reaction == aux)
+      return true;
+    actual = actual->sig;
+  }
   return false;
 }

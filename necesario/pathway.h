@@ -2,7 +2,13 @@
 #define PATHWAY_H
 #include <iostream>
 #include <vector>
+#include <ncurses.h>
+#include <string.h>
+#include <string>
 using namespace std;
+
+bool esfinal();
+void final();
 
 class Reaction;
 
@@ -22,6 +28,7 @@ public:
     void print();
     Entry * getSig() {return this->sig;}
     bool hasReaction(Reaction *nuevo);
+    bool isReaction(Entry *aux);
     bool empty();
     Reaction * getRPrimero(){return this->primero;}
     friend class Pathway;
@@ -41,6 +48,7 @@ public:
         this->sig = NULL;
     }
     int getId(){return this->reaction->id;}
+    int getType(){return this->type;}
     string getENombre(){return this->reaction->nombre;}
     Reaction * getSig(){return this->sig;}
     friend class Pathway;
@@ -62,6 +70,8 @@ public:
     void addEntry(Entry *nuevo);
     void print();
     void setSig(Pathway *nuevo) {this->sig = nuevo;}
+    void delEmptyR();
+    void delEntry(Entry *del);
     Entry * getEntry(int id);
     Entry * getPrimero() {return this->primero;}
     bool empty();

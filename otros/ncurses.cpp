@@ -38,6 +38,7 @@ void principal(WINDOW *menu, WINDOW *info){
   for (size_t i = 0; i < 7; i++) {
     mvwaddstr(menu, i+2, 1, opciones[i].c_str());
   }
+  keypad(menu_win, true);
 }
 
 int main()
@@ -51,8 +52,6 @@ int main()
  WINDOW * menu_win = newwin(alto, 20, filas-alto-4, column-22);
  WINDOW * info_win = newwin(alto, ancho, 1, column-ancho-2);
  refresh();
-
- keypad(menu_win, true);
 
  bool running = true;
  int opcion;
