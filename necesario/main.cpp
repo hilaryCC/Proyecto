@@ -132,179 +132,177 @@ void verPathways(){
 }
 
 void crearDot(int num, string out){
-  Pathway *nuevo = primero;
-  int cont = 1;
-  while(nuevo != NULL && cont < num){
-    nuevo = nuevo->getSig();
-    cont++;
-  }
-  if(nuevo!=NULL && !nuevo->empty()){
-    string nombre = nuevo->getTitulo();
-    string line = " [style=dotted];\n";
-    string shape = "[shape=box];\n";
-    string label = " [label=\"";
-    string flecha = " -> {";
-    string filen = "grafos/"+out+".dot";
-    Entry *actual = nuevo->getPrimero();
-    ofstream file;
-    file.open(filen);
-    file << "digraph grafo{\n"
-         << "a" << label << nombre << "\"] " << shape;
-    while(actual != NULL){
-      Reaction *aux = actual->getRPrimero();
-      int id = actual->getId();
-      file << id << label << actual->getNombre() << "\"];\n"
-           << id << flecha;
-      while(aux != NULL){
-        int aid = aux->getId();
-        file << aid << " ";
-        aux = aux->getSig();
-      }
-      file << "};\n";
-      actual = actual->getSig();
+  try{
+    Pathway *nuevo = primero;
+    int cont = 1;
+    while(nuevo != NULL && cont < num){
+      nuevo = nuevo->getSig();
+      cont++;
     }
-    file << "}";
-    file.close();
-    string cg = "dot -Tpng "+filen+" -o grafos/"+out+".png";
-    string og = "xdg-open grafos/"+out+".png";
-    char cgraph[cg.size()];
-    char ograph[og.size()];
-    strcpy(cgraph, cg.c_str());
-    strcpy(ograph, og.c_str());
-    system (cgraph);
-    system (ograph);
-  }
+    if(nuevo!=NULL && !nuevo->empty()){
+      string nombre = nuevo->getTitulo();
+      string shape = "[shape=box];\n";
+      string label = " [label=\"";
+      string flecha = " -> {";
+      string filen = "grafos/"+out+".dot";
+      Entry *actual = nuevo->getPrimero();
+      ofstream file;
+      Reaction *aux;
+      file.open(filen);
+      file << "digraph grafo{\n"
+           << "a" << label << nombre << "\"] " << shape;
+      while(actual != NULL){
+        aux = actual->getRPrimero();
+        file << actual->getId() << label << actual->getNombre() << "\"];\n"
+             << actual->getId() << flecha;
+        while(aux != NULL){
+          file << aux->getId() << " ";
+          aux = aux->getSig();
+        }
+        file << "};\n";
+        actual = actual->getSig();
+      }
+      file << "}";
+      file.close();
+      string cg = "dot -Tpng "+filen+" -o grafos/"+out+".png";
+      string og = "xdg-open grafos/"+out+".png";
+      system (cg.c_str());
+      system (og.c_str());
+    }
+  } catch(...){}
 }
 
 bool createPathway(const char* path){
-  pugi::xml_document doc;
-  if (!doc.load_file(path)) return false; //hay un error en el archivo
+  try{
+      pugi::xml_document doc;
+      if (!doc.load_file(path)) return false; //hay un error en el archivo
 
-  pugi::xml_node tools = doc.child("pathway");
-  if (tools != NULL) {
-        string nTitulo = tools.attribute("title").value();
-        printw("\nNombre del pathway: %s\n", tools.attribute("name").value());
-        printw("Titulo del pathway: %s\n", nTitulo.c_str());
-        printw("\n¿Desea cambiar titulo? {S/N}");
-        refresh();
-        principal(menu_win, info_win);
-        printw("");
-        refresh();
-        char cambiar = getch();
-        if(cambiar == 83 || cambiar == 115 || cambiar == 10){
-          nTitulo = "";
-          while(strcmp(nTitulo.c_str(), "") == 0){
-            if(esfinal()){
-              principal(menu_win, info_win);
-              getch();
-              werase(stdscr);
-              refresh();
-              principal(menu_win, info_win);
-            }
-            printw("\nIngrese el nuevo titulo: ");
+      pugi::xml_node tools = doc.child("pathway");
+      if (tools != NULL) {
+            string nTitulo = tools.attribute("title").value();
+            printw("\nNombre del pathway: %s\n", tools.attribute("name").value());
+            printw("Titulo del pathway: %s\n", nTitulo.c_str());
+            printw("\n¿Desea cambiar titulo? {S/N}");
             refresh();
             principal(menu_win, info_win);
             printw("");
             refresh();
-            nTitulo = getstring();
-          }
-          printw("Nuevo nombre: %s\n", nTitulo.c_str());
-          esfinal();
-          principal(menu_win, info_win);
-        }
-
-        Pathway * nuevo = new Pathway(tools.attribute("name").value(), nTitulo);
-        int contSubs = 0;
-        int contProd = 0;
-
-
-
-        for (pugi::xml_node tool = tools.first_child(); tool; tool = tool.next_sibling())
-        {
-            if(strcmp(tool.name(), "entry")==0 &&
-                    strcmp(tool.attribute("type").value(), "compound") == 0){ //Busca todos los compuestos del pathway
-                Entry *newEntry = new Entry(tool.attribute("name").value(), tool.attribute("id").as_int());
-                nuevo->addEntry(newEntry);
+            char cambiar = getch();
+            if(cambiar == 83 || cambiar == 115 || cambiar == 10){
+              nTitulo = "";
+              while(strcmp(nTitulo.c_str(), "") == 0){
+                if(esfinal()){
+                  principal(menu_win, info_win);
+                  getch();
+                  werase(stdscr);
+                  refresh();
+                  principal(menu_win, info_win);
+                }
+                printw("\nIngrese el nuevo titulo: ");
+                refresh();
+                principal(menu_win, info_win);
+                printw("");
+                refresh();
+                nTitulo = getstring();
+              }
+              printw("Nuevo nombre: %s\n", nTitulo.c_str());
+              esfinal();
+              principal(menu_win, info_win);
             }
 
-            if(strcmp(tool.name(), "reaction")==0){//Busca las reacciones
-                contSubs = 0;
-                contProd = 0;
-                int type = 0;
-                if(strcmp(tool.attribute("type").value(), "reversible")==0)
-                    type = 1;
-                else
-                    type = 2;
-                //cuenta la cantidad de sustratos y productos
-                for (pugi::xml_node to = tool.first_child(); to; to = to.next_sibling()){
-                    if(strcmp(to.name(), "substrate") == 0)
-                        contSubs++;
-                    else if(strcmp(to.name(), "product") == 0)
-                            contProd++;
+            Pathway * nuevo = new Pathway(tools.attribute("name").value(), nTitulo);
+            int contSubs = 0;
+            int contProd = 0;
+
+
+
+            for (pugi::xml_node tool = tools.first_child(); tool; tool = tool.next_sibling())
+            {
+                if(strcmp(tool.name(), "entry")==0 &&
+                        strcmp(tool.attribute("type").value(), "compound") == 0){ //Busca todos los compuestos del pathway
+                    Entry *newEntry = new Entry(tool.attribute("name").value(), tool.attribute("id").as_int());
+                    nuevo->addEntry(newEntry);
                 }
-                //Si existe al menos uno de cada uno, crea las listas con los id de cada uno
-                if(contProd != 0 && contSubs != 0){
-                    vector<int> subs(contSubs);
-                    vector<int> prods(contProd);
+
+                if(strcmp(tool.name(), "reaction")==0){//Busca las reacciones
                     contSubs = 0;
                     contProd = 0;
-
+                    int type = 0;
+                    if(strcmp(tool.attribute("type").value(), "reversible")==0)
+                        type = 1;
+                    else
+                        type = 2;
+                    //cuenta la cantidad de sustratos y productos
                     for (pugi::xml_node to = tool.first_child(); to; to = to.next_sibling()){
-                        if(strcmp(to.name(), "substrate") == 0){
-                            subs[contSubs] = to.attribute("id").as_int();
+                        if(strcmp(to.name(), "substrate") == 0)
                             contSubs++;
-                        }
-                        else if(strcmp(to.name(), "product") == 0){
-                            prods[contProd] = to.attribute("id").as_int();
-                            contProd++;
-                        }
+                        else if(strcmp(to.name(), "product") == 0)
+                                contProd++;
                     }
-                    //a cada sustrato se le agregan todos los productos segun el tipo de relacion
-                    for(int sub = 0; sub < (int)subs.size(); sub++){
-                        Entry * subActual = nuevo->getEntry(subs[sub]);
+                    //Si existe al menos uno de cada uno, crea las listas con los id de cada uno
+                    if(contProd != 0 && contSubs != 0){
+                        vector<int> subs(contSubs);
+                        vector<int> prods(contProd);
+                        contSubs = 0;
+                        contProd = 0;
 
-                        for(int prod = 0; prod < (int)prods.size(); prod++){
-                            Entry * prodActual = nuevo->getEntry(prods[prod]);
+                        for (pugi::xml_node to = tool.first_child(); to; to = to.next_sibling()){
+                            if(strcmp(to.name(), "substrate") == 0){
+                                subs[contSubs] = to.attribute("id").as_int();
+                                contSubs++;
+                            }
+                            else if(strcmp(to.name(), "product") == 0){
+                                prods[contProd] = to.attribute("id").as_int();
+                                contProd++;
+                            }
+                        }
+                        //a cada sustrato se le agregan todos los productos segun el tipo de relacion
+                        for(int sub = 0; sub < (int)subs.size(); sub++){
+                            Entry * subActual = nuevo->getEntry(subs[sub]);
 
-                            if(subActual != NULL && prodActual != NULL){
-                                if(type == 1){
-                                    Reaction * nuevaRs = new Reaction(type, prodActual);
-                                    Reaction * nuevaRp = new Reaction(type, subActual);
-                                    if(!subActual->hasReaction(nuevaRs))
-                                        subActual->addReaction(nuevaRs);
-                                    else delete(nuevaRs);
-                                    if(!prodActual->hasReaction(nuevaRp))
-                                        prodActual->addReaction(nuevaRp);
-                                    else delete(nuevaRp);
-                                }
+                            for(int prod = 0; prod < (int)prods.size(); prod++){
+                                Entry * prodActual = nuevo->getEntry(prods[prod]);
 
-                                else if(type == 2){
-                                    Reaction * nuevaR = new Reaction(type, prodActual);
-                                    if(!subActual->hasReaction(nuevaR))
-                                        subActual->addReaction(nuevaR);
-                                    else delete(nuevaR);
-                                    break;
+                                if(subActual != NULL && prodActual != NULL){
+                                    if(type == 1){
+                                        Reaction * nuevaRs = new Reaction(type, prodActual);
+                                        Reaction * nuevaRp = new Reaction(type, subActual);
+                                        if(!subActual->hasReaction(nuevaRs))
+                                            subActual->addReaction(nuevaRs);
+                                        else delete(nuevaRs);
+                                        if(!prodActual->hasReaction(nuevaRp))
+                                            prodActual->addReaction(nuevaRp);
+                                        else delete(nuevaRp);
+                                    }
+
+                                    else if(type == 2){
+                                        Reaction * nuevaR = new Reaction(type, prodActual);
+                                        if(!subActual->hasReaction(nuevaR))
+                                            subActual->addReaction(nuevaR);
+                                        else delete(nuevaR);
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-        }
-        if(!nuevo->empty()){
-          nuevo->delEmptyR();
-          addPathway(nuevo);
-          return true;
-        }
-        else{
-          printw("Pathway vacio\n");
-          refresh();
-          delete(nuevo);
-          return false;
-        }
-      }
-  return false;
+            }
+            if(!nuevo->empty()){
+              nuevo->delEmptyR();
+              addPathway(nuevo);
+              return true;
+            }
+            else{
+              printw("Pathway vacio\n");
+              refresh();
+              delete(nuevo);
+              return false;
+            }
+          }
+      return false;
+    }catch(...){return false;}
 }
 
 void memoria(){
@@ -404,36 +402,37 @@ void memoria(){
     refresh();
   }
   else{
-    path = primero;
-    esfinal2();
-    printw("Rutas creadas, y reacciones\n");
-    refresh();
-    while(path != NULL){
-      esfinal2();
-      printw("\tRuta: %s -> %p\n", path->getTitulo().c_str(), path);
-      refresh();
-      if(!path->empty()){
-        aux = path->getPrimero();
-        while(aux != NULL){
+    try{
+        path = primero;
+        esfinal2();
+        printw("Rutas creadas, y reacciones\n");
+        refresh();
+        while(path != NULL){
           esfinal2();
-          printw("\t\tEntry: %s -> %p\n", aux->getNombre().c_str(), aux);
+          printw("\tRuta: %s -> %p\n", path->getTitulo().c_str(), path);
           refresh();
-          if(!aux->empty()){
-            react = aux->getRPrimero();
-            while(react != NULL){
+          if(!path->empty()){
+            aux = path->getPrimero();
+            while(aux != NULL){
               esfinal2();
-              printw("\t\t\tReaction tipo: %d -> %p\n", react->getType(), react);
+              printw("\t\tEntry: %s -> %p\n", aux->getNombre().c_str(), aux);
               refresh();
-              react = react->getSig();
+              if(!aux->empty()){
+                react = aux->getRPrimero();
+                while(react != NULL){
+                  esfinal2();
+                  printw("\t\t\tReaction tipo: %d -> %p\n", react->getType(), react);
+                  refresh();
+                  react = react->getSig();
+                }
+              }
+              aux = aux->getSig();
             }
           }
-          aux = aux->getSig();
+          path = path->getSig();
         }
-      }
-      path = path->getSig();
+      }catch (...){}
     }
-  }
-
 }
 
 int main()
@@ -461,6 +460,7 @@ int main()
 
     switch (opcion) {
           case 48:
+          try{
                 werase(stdscr);
                 refresh();
                 werase(info_win);
@@ -474,8 +474,10 @@ int main()
                 getch();
                 refresh();
                 wrefresh(info_win);
+              }catch(...){printw("\nFalla de memoria\n");}
                 break;
           case 49:
+          try{
                werase(stdscr);
                refresh();
                werase(info_win);
@@ -494,7 +496,7 @@ int main()
                if(createPathway(input.c_str())){
                   werase(info_win);
                   principal(menu_win, info_win);
-                  mvwaddstr(info_win, 1, 1, "agregado \ncorrectamente");
+                  mvwaddstr(info_win, 1, 1, "agregado \n correctamente");
                 }
                else{
                   werase(info_win);
@@ -503,8 +505,10 @@ int main()
                 }
                refresh();
                wrefresh(info_win);
+             }catch(...){printw("\nFalla de memoria\n");}
                break;
           case 50:
+          try{
                werase(stdscr);
                refresh();
                werase(info_win);
@@ -512,11 +516,13 @@ int main()
                principal(menu_win, info_win);
                mvwaddstr(info_win, 1, 1, "Ver rutas\n disponibles");
                wrefresh(info_win);
+             }catch(...){printw("\nFalla de memoria\n");}
                break;
           case 51:
                mvwaddstr(info_win, 1, 1, "Comparar dos rutas");
                break;
           case 52:
+          try{
                werase(stdscr);
                refresh();
                werase(info_win);
@@ -545,11 +551,13 @@ int main()
                  refresh();
                }
                refresh();
+             }catch(...){printw("\nFalla de memoria\n");}
                break;
           case 53:
                mvwaddstr(info_win, 1, 1, "Crear nueva ruta");
                break;
           case 54:
+          try{
               werase(stdscr);
               refresh();
               werase(info_win);
@@ -557,6 +565,7 @@ int main()
                mvwaddstr(info_win, 1, 1, "Modo inspeccionar");
                final();
                getch();
+             }catch(...){printw("\nFalla de memoria\n");}
                break;
           case 55:
                mvwaddstr(info_win, 1, 1, "Salir");

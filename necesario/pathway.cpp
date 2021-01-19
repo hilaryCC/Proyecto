@@ -129,17 +129,20 @@ void Pathway::delEntry(Entry *del){
   while(aux != NULL){
     if(aux == del && aux == this->primero){
         this->primero = aux->sig;
-        free(aux);
+        delete(aux);
+        //free(aux);
         break;
     }
     else if(aux == del && aux == this->ultimo){
       this->ultimo = anterior;
-      free(aux);
+      delete(aux);
+      //free(aux);
       break;
     }
     else if(aux == del){
       anterior->sig = aux->sig;
-      free(aux);
+      delete(aux);
+      //free(aux);
       break;
     }
     anterior = aux;
